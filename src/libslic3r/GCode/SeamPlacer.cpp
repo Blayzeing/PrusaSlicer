@@ -455,13 +455,17 @@ Polygons extract_perimeter_polygons(const Layer *layer, std::vector<const LayerR
 // if Custom Seam modifiers are present, oversamples the polygon if necessary to better fit user intentions
 void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const LayerRegion *region,
         const GlobalModelInfo &global_model_info, PrintObjectSeamData::LayerSeams &result) {
+    // Return if this polygon has zero area
     if (orig_polygon.size() == 0) {
         return;
     }
+
+    // Get useful measurements about polygon
     Polygon polygon = orig_polygon;
     bool was_clockwise = polygon.make_counter_clockwise();
     float angle_arm_len = region != nullptr ? region->flow(FlowRole::frExternalPerimeter).nozzle_diameter() : 0.5f;
 
+    // Calculates the angles between each edge of the polygon, stores in `polygon_angles`
     std::vector<float> lengths { };
     for (size_t point_idx = 0; point_idx < polygon.size() - 1; ++point_idx) {
         lengths.push_back((unscale(polygon[point_idx]) - unscale(polygon[point_idx + 1])).norm());
@@ -470,9 +474,12 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
     std::vector<float> polygon_angles = calculate_polygon_angles_at_vertices(polygon, lengths,
             angle_arm_len);
 
+
     result.perimeters.push_back( { });
     Perimeter &perimeter = result.perimeters.back();
 
+
+    // Oversampling long edges? TODO: Read through, understand
     std::queue<Vec3f> orig_polygon_points { };
     for (size_t index = 0; index < polygon.size(); ++index) {
         Vec2f unscaled_p = unscale(polygon[index]).cast<float>();
@@ -484,10 +491,15 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
     perimeter.start_index = result.points.size();
     perimeter.flow_width = region != nullptr ? region->flow(FlowRole::frExternalPerimeter).width() : 0.0f;
     bool some_point_enforced = false;
+    // Iterates over every point in the perimeter (and adds more to oversampled_points if it thinks it needs them, sampling them too?)
+    // and checks what each point is - in particular, it tries to work out if any of them are seam blocked or enforced
     while (!orig_polygon_points.empty() || !oversampled_points.empty()) {
         EnforcedBlockedSeamPoint type = EnforcedBlockedSeamPoint::Neutral;
         Vec3f position;
         float local_ccw_angle = 0;
+
+        // Get the next point - prioritising `pop`ing and useing the first/front over sample point,
+        //                      if that's empty, then move onto the next orginal polygon point.
         bool orig_point = false;
         if (!oversampled_points.empty()) {
             position = oversampled_points.front();
@@ -500,6 +512,7 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
             orig_point = true;
         }
 
+        // Asks the `global_model_info` object questions about what type of point this is, tags it
         if (global_model_info.is_enforced(position, perimeter.flow_width)) {
             type = EnforcedBlockedSeamPoint::Enforced;
         }
@@ -509,6 +522,14 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
         }
         some_point_enforced = some_point_enforced || type == EnforcedBlockedSeamPoint::Enforced;
 
+        // If this was an original point we've just handled, then check if we should oversample the next length
+        // (i.e. the line to the next point). We do this by getting the length to the next point, and finding out
+        // if there's an enforcer in the sphere of that distance from the current pos (indicating that there's (probably)
+        // an enforcement point somewhere between them). If there is, then subdivide the line into
+        // `SeamPlacer::enforcer_oversampling_distance` steps, pushing these points onto the `oversampled_points` list.
+        // TODO: this only uses `is_enforced()` surely here we should look at `is_blocked()` too?
+        //         - though, I don't think so because I think all of this is essentially done again next
+        //         - Actually, no - there's definitely something funky here. I'll have to check.
         if (orig_point) {
             Vec3f pos_of_next = orig_polygon_points.empty() ? first : orig_polygon_points.front();
             float distance_to_next = (position - pos_of_next).norm();
@@ -523,8 +544,12 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
             }
         }
 
+        // Place the point data into `result.points`.
         result.points.emplace_back(position, perimeter, local_ccw_angle, type);
     }
+
+    // We now know whether or not any of the points are enforced via the `some_point_enforced` bool.
+    // `result.points` now contains all of those points
 
     perimeter.end_index = result.points.size();
 
