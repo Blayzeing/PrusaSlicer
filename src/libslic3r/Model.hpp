@@ -326,6 +326,8 @@ enum class ModelVolumeType : int {
     PARAMETER_MODIFIER,
     SUPPORT_BLOCKER,
     SUPPORT_ENFORCER,
+    SEAM_BLOCKER,
+    SEAM_ENFORCER,
 };
 
 // A printable object, possibly having multiple print volumes (each with its own set of parameters and materials),
