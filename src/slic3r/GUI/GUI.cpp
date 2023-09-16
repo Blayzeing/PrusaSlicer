@@ -70,8 +70,8 @@ bool debugged()
 {
     #ifdef _WIN32
     return IsDebuggerPresent() == TRUE;
-	#else
-	return false;
+	  #else
+	  return false;
     #endif /* _WIN32 */
 }
 
