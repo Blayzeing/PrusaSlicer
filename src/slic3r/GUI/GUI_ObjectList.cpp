@@ -4330,7 +4330,7 @@ void ObjectList::change_part_type()
     const bool is_cut_object = obj->is_cut();
     wxArrayString                   names;
     std::vector<ModelVolumeType>    types;
-    types.reserve(5);
+    types.reserve(7);
     if (!is_cut_object) {
         for (const wxString&        name    : { _L("Part"),                     _L("Negative Volume") })
             names.Add(name);
@@ -4344,9 +4344,9 @@ void ObjectList::change_part_type()
     }
 
     if (!volume->text_configuration.has_value()) {
-        for (const wxString&        name    : { _L("Support Blocker"),          _L("Support Enforcer") })
+        for (const wxString&        name    : { _L("Support Blocker"),            _L("Support Enforcer"),            _L("Seam Blocker"),            _L("Seam Enforcer") })
             names.Add(name);
-        for (const ModelVolumeType  type_id : { ModelVolumeType::SUPPORT_BLOCKER, ModelVolumeType::SUPPORT_ENFORCER })
+        for (const ModelVolumeType  type_id : { ModelVolumeType::SUPPORT_BLOCKER, ModelVolumeType::SUPPORT_ENFORCER, ModelVolumeType::SEAM_BLOCKER, ModelVolumeType::SEAM_ENFORCER })
             types.emplace_back(type_id);
     }
 
@@ -4357,7 +4357,7 @@ void ObjectList::change_part_type()
     auto choice = wxGetApp().GetSingleChoiceIndex(_L("Type:"), _L("Select type of part"), names, selection);
     const auto new_type = choice >= 0 ? types[choice] : ModelVolumeType::INVALID;
 
-	if (new_type == type || new_type == ModelVolumeType::INVALID)
+    if (new_type == type || new_type == ModelVolumeType::INVALID)
         return;
 
     take_snapshot(_L("Change Part Type"));
