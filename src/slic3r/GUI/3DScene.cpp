@@ -296,6 +296,10 @@ ColorRGBA color_from_model_volume(const ModelVolume& model_volume)
         color = { 1.0f, 0.2f, 0.2f, 1.0f };
     else if (model_volume.is_support_enforcer())
         color = { 0.2f, 0.2f, 1.0f, 1.0f };
+    else if (model_volume.is_seam_blocker())
+        color = { 0.9f, 0.3f, 1.0f, 1.0f };
+    else if (model_volume.is_seam_enforcer())
+        color = { 1.0f, 1.0f, 1.0f, 1.0f };
 
     if (!model_volume.is_model_part())
         color.a(0.5f);
