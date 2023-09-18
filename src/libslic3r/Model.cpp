@@ -1799,6 +1799,10 @@ ModelVolumeType ModelVolume::type_from_string(const std::string &s)
 		return ModelVolumeType::SUPPORT_ENFORCER;
     if (s == "SupportBlocker")
 		return ModelVolumeType::SUPPORT_BLOCKER;
+    if (s == "SeamEnforcer")
+        return ModelVolumeType::SEAM_ENFORCER;
+    if (s == "SeamBlocker")
+        return ModelVolumeType::SEAM_BLOCKER;
     assert(s == "0");
     // Default value if invalud type string received.
 	return ModelVolumeType::MODEL_PART;
@@ -1812,6 +1816,8 @@ std::string ModelVolume::type_to_string(const ModelVolumeType t)
 	case ModelVolumeType::PARAMETER_MODIFIER: return "ParameterModifier";
 	case ModelVolumeType::SUPPORT_ENFORCER:   return "SupportEnforcer";
 	case ModelVolumeType::SUPPORT_BLOCKER:    return "SupportBlocker";
+    case ModelVolumeType::SEAM_ENFORCER:      return "SeamEnforcer";
+    case ModelVolumeType::SEAM_BLOCKER:       return "SeamBlocker";
     default:
         assert(false);
         return "ModelPart";
