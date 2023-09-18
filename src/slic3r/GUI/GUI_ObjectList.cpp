@@ -2905,7 +2905,12 @@ wxDataViewItem ObjectList::add_settings_item(wxDataViewItem parent_item, const D
     const bool is_object_settings = m_objects_model->GetItemType(parent_item) == itObject;
     if (!is_object_settings) {
         ModelVolumeType volume_type = m_objects_model->GetVolumeType(parent_item);
-        if (volume_type == ModelVolumeType::NEGATIVE_VOLUME || volume_type == ModelVolumeType::SUPPORT_BLOCKER || volume_type == ModelVolumeType::SUPPORT_ENFORCER)
+        if (   volume_type == ModelVolumeType::NEGATIVE_VOLUME
+            || volume_type == ModelVolumeType::SUPPORT_BLOCKER
+            || volume_type == ModelVolumeType::SUPPORT_ENFORCER
+            || volume_type == ModelVolumeType::SEAM_BLOCKER
+            || volume_type == ModelVolumeType::SEAM_ENFORCER
+           )
             return ret;
     }
 
