@@ -826,7 +826,7 @@ void PrintObject::slice_volumes()
     BOOST_LOG_TRIVIAL(debug) << "Slicing volumes - make_slices in parallel - end";
 }
 
-std::vector<Polygons> PrintObject::slice_support_volumes(const ModelVolumeType model_volume_type) const
+std::vector<Polygons> PrintObject::slice_model_volumes(const ModelVolumeType model_volume_type) const
 {
     auto it_volume     = this->model_object()->volumes.begin();
     auto it_volume_end = this->model_object()->volumes.end();
