@@ -302,8 +302,34 @@ struct GlobalModelInfo {
     indexed_triangle_set blockers;
     AABBTreeIndirect::Tree<3, float> enforcers_tree;
     AABBTreeIndirect::Tree<3, float> blockers_tree;
+    std::vector<Polygons> enforcer_volume_polygons;
+    std::vector<Polygons> blocker_volume_polygons;
+    std::vector<float> enforcer_volume_layer_zs; // First value will be the actual bottom z, every other will be the top of each layer
+    std::vector<float> blocker_volume_layer_zs;
+
+    //float enforcer_volume_height; // Enforcers and blockers are always sliced with a uniform layer height
+    //float blocker_volume_height;
+    //float enforcer_volume_z_min;
+    //float blocker_volume_z_min;
+
+    // Store the layers directly, hoping that they might have direct z-height access
+    //SpanOfConstPtrs<Layer> enforcer_volume_layers;
+    //SpanOfConstPtrs<Layer> blocker_volume_layers;
 
     bool is_enforced(const Vec3f &position, float radius) const {
+        // TODO: I've added the below bit just as a rudimentary test to see if we're in the right ballpark
+        //       In practice, we'll probably have to have something fancy added before the call to this in
+        //       process_perimeter_polygon() if we want it to be accurate. Probably something that intersects the
+        //       entire line against the volumes, and then returns sub-lines or something.
+        //       But for now we're just checking if the position is within the volume so that we can verify that
+        //       the volumes are aligned and we know how to access them.
+        
+        // 1: Use position.z to get the layer that we should be using in enforcer/blocker_volume_polygons.
+        //    - To do this, we could use Layer.hpp's zs_from_layers() to get a vector of all the z heights, along with some function to get the layer height, then we could simply find the closest layer to position.z if it's within the top and bottom zs from layers (plus/minus half layer height)
+        //    - Looking at Layer.hpp's "bottom_z(), layer height is measured from the layer down, indicating that the top layer is at the top
+        // 2: Test position.xy against the polygons in that layer.
+
+
         if (enforcers.empty()) {
             return false;
         }
@@ -313,6 +339,9 @@ struct GlobalModelInfo {
     }
 
     bool is_blocked(const Vec3f &position, float radius) const {
+        // TODO: I've added the below bit just as a rudimentary test to see if we're in the right ballpark
+        // TODO: We're just doing enforcers for now
+
         if (blockers.empty()) {
             return false;
         }
@@ -732,7 +761,7 @@ void compute_global_occlusion(GlobalModelInfo &result, const PrintObject *po,
 
 void gather_enforcers_blockers(GlobalModelInfo &result, const PrintObject *po) {
     BOOST_LOG_TRIVIAL(debug)
-    << "SeamPlacer: build AABB trees for raycasting enforcers/blockers: start";
+    << "SeamPlacer: build AABB trees for raycasting painted enforcers/blockers: start";
 
     auto obj_transform = po->trafo_centered();
 
@@ -756,7 +785,48 @@ void gather_enforcers_blockers(GlobalModelInfo &result, const PrintObject *po) {
             result.blockers.indices);
 
     BOOST_LOG_TRIVIAL(debug)
-    << "SeamPlacer: build AABB trees for raycasting enforcers/blockers: end";
+    << "SeamPlacer: build AABB trees for raycasting painted enforcers/blockers: end";
+
+    BOOST_LOG_TRIVIAL(debug)
+    << "seamplacer: collect sliced polygons for intersecting volume enforcers/blockers: start";
+
+    // TODO? Transform these into correct space?
+    result.enforcer_volume_polygons = po->slice_seam_enforcers(); // Get a list of all polygons from all seam enforcer model volumes for this print object (which is made up of many ModelVolumes)
+    result.enforcer_volume_layer_zs = zs_from_layers(po->layers()); // Get a list of the z heights of all the layers in this print object
+    std::vector<Polygons> test_polys = po->slice_support_enforcers();
+    BOOST_LOG_TRIVIAL(debug)
+    << "seamplacer:\tSliced SEAM polygon array size: " << result.enforcer_volume_polygons.size();
+    BOOST_LOG_TRIVIAL(debug)
+    << "seamplacer:\tSliced SUPPORT polygon array size: " << test_polys.size();
+    // TODO: Append the bottom z, probably by saving po->layers() into an auto and then taking the last/first element and getting it's bottom_z()
+    BOOST_LOG_TRIVIAL(debug)
+    << "seamplacer:\tEnforcer polygon layer zs (total: " << result.enforcer_volume_layer_zs.size() << "): ";
+    if(test_polys.size() > 0)
+    for (int i = 0; i<result.enforcer_volume_layer_zs.size(); i++){
+        BOOST_LOG_TRIVIAL(debug)
+        << "seamplacer:\ttest_polys at " << result.enforcer_volume_layer_zs[i] << " - " << test_polys[i].size() << " polygons";
+    }
+    
+    //result.enforcer_volume_layer_count = po->layer_count();
+    //result.enforcer_volume_layer_height = 
+    // TODO: Okay, so technically layer heights can vary between layers (because of course they can), but in practice modifiers will never experience this. 
+   
+    
+    //TODO: We're just doing enforcers for now
+    //result.blocker_volume_polygons = po->slice_seam_blockers();
+
+    //result.blocker_volume_layer_count = po->layer_count();
+
+    //// Getting additional information to be able to go from z position to layer index
+    //result.enforcer_volume_layer_count = po->layer_count();
+    //result.enforcer_volume_height = po->
+    //result.blocker_volume_layer_count = po->layer_count();
+    
+    //result.enforcer_volume_layers = po->layers();
+    //result.blocker_volume_layers = po->layers();
+
+    BOOST_LOG_TRIVIAL(debug)
+    << "SeamPlacer: collect sliced polygons for intersecting volume enforcers/blockers: end";
 }
 
 struct SeamComparator {

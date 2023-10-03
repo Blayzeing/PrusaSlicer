@@ -828,12 +828,33 @@ void PrintObject::slice_volumes()
 
 std::vector<Polygons> PrintObject::slice_model_volumes(const ModelVolumeType model_volume_type) const
 {
+    BOOST_LOG_TRIVIAL(debug) << "-----------> Running slice_model_volumes with " << this->model_object()->volumes.size() << " volumes. Model volume type: " << 
+        ((model_volume_type == ModelVolumeType::SUPPORT_BLOCKER) ?
+             "Support Blocker" : 
+        ((model_volume_type == ModelVolumeType::SUPPORT_ENFORCER) ?
+             "Support Enforcer" : 
+        ((model_volume_type == ModelVolumeType::SEAM_BLOCKER) ?
+             "Seam Blocker" : 
+        ((model_volume_type == ModelVolumeType::SEAM_ENFORCER) ? 
+            "Seam Enforcer":
+            "Unknown"))));
     auto it_volume     = this->model_object()->volumes.begin();
     auto it_volume_end = this->model_object()->volumes.end();
     for (; it_volume != it_volume_end && (*it_volume)->type() != model_volume_type; ++ it_volume) ;
     std::vector<Polygons> slices;
     if (it_volume != it_volume_end) {
-        // Found at least a single support volume of model_volume_type.
+        
+
+        BOOST_LOG_TRIVIAL(debug) << "-----------> Checking volume type...";
+        if(model_volume_type == ModelVolumeType::SUPPORT_BLOCKER)
+            BOOST_LOG_TRIVIAL(debug) << "-------------> FOUND: Support Blocker!";
+        else if(model_volume_type == ModelVolumeType::SUPPORT_ENFORCER)
+            BOOST_LOG_TRIVIAL(debug) << "-------------> FOUND: Support Enforcer!";
+        else if(model_volume_type == ModelVolumeType::SEAM_BLOCKER)
+            BOOST_LOG_TRIVIAL(debug) << "-------------> FOUND: Seam Blocker!";
+        else if(model_volume_type == ModelVolumeType::SEAM_ENFORCER)
+            BOOST_LOG_TRIVIAL(debug) << "-------------> FOUND: Seam Enforcer!";
+        // Found at least a single model volume of model_volume_type.
         std::vector<float> zs = zs_from_layers(this->layers());
         std::vector<char>  merge_layers;
         bool               merge = false;
