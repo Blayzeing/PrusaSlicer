@@ -1728,7 +1728,10 @@ struct Plater::priv
     priv(Plater *q, MainFrame *main_frame);
     ~priv();
 
-    bool is_project_dirty() const { return dirty_state.is_dirty(); }
+    bool is_project_dirty() const {
+        BOOST_LOG_TRIVIAL(debug) << "--------> is_project_dirty: " << dirty_state.is_dirty();
+        return dirty_state.is_dirty();
+    }
     bool is_presets_dirty() const { return dirty_state.is_presets_dirty(); }
     void update_project_dirty_from_presets() { dirty_state.update_from_presets(); }
     int save_project_if_dirty(const wxString& reason) {

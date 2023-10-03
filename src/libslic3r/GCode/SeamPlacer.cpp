@@ -30,7 +30,7 @@
 
 #include "libslic3r/Utils.hpp"
 
-//#define DEBUG_FILES
+#define DEBUG_FILES
 
 #ifdef DEBUG_FILES
 #include <boost/nowide/cstdio.hpp>

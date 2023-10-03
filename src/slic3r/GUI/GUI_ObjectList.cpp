@@ -32,6 +32,7 @@
 #include "MsgDialog.hpp"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/log/trivial.hpp>
 #include <wx/progdlg.h>
 #include <wx/listbook.h>
 #include <wx/numformatter.h>
@@ -3191,8 +3192,12 @@ bool ObjectList::delete_from_model_and_list(const std::vector<ItemForDelete>& it
     std::set<size_t> modified_objects_ids;
     for (std::vector<ItemForDelete>::const_reverse_iterator item = items_for_delete.rbegin(); item != items_for_delete.rend(); ++item) {
         if (!(item->type&(itObject | itVolume | itInstance)))
+        {
+            BOOST_LOG_TRIVIAL(debug) << "----------------->o 1st sec";
             continue;
+        }
         if (item->type&itObject) {
+            BOOST_LOG_TRIVIAL(debug) << "----------------->o 2nd sec";
             bool was_cut = object(item->obj_idx)->is_cut();
             if (!del_object(item->obj_idx))
                 return false;// continue;
@@ -3201,12 +3206,18 @@ bool ObjectList::delete_from_model_and_list(const std::vector<ItemForDelete>& it
                 update_lock_icons_for_model();
         }
         else {
+            BOOST_LOG_TRIVIAL(debug) << "----------------->o 3rd sec";
             if (!del_subobject_from_object(item->obj_idx, item->sub_obj_idx, item->type))
+            {
+                BOOST_LOG_TRIVIAL(debug) << "------------------->o early exit";
                 return false;// continue;
+            }
             if (item->type&itVolume) {
+                BOOST_LOG_TRIVIAL(debug) << "------------------->o itVolume type";
                 m_objects_model->Delete(m_objects_model->GetItemByVolumeId(item->obj_idx, item->sub_obj_idx));
                 ModelObject* obj = object(item->obj_idx);
                 if (obj->volumes.size() == 1) {
+                    // Only occurs when deleting the last volume in an object
                     wxDataViewItem parent = m_objects_model->GetItemById(item->obj_idx);
                     if (obj->config.has("extruder")) {
                         const wxString extruder = wxString::Format("%d", obj->config.extruder());
@@ -3218,7 +3229,10 @@ bool ObjectList::delete_from_model_and_list(const std::vector<ItemForDelete>& it
                 wxGetApp().plater()->canvas3D()->ensure_on_bed(item->obj_idx, printer_technology() != ptSLA);
             }
             else
+            {
+                BOOST_LOG_TRIVIAL(debug) << "------------------->o else type";
                 m_objects_model->Delete(m_objects_model->GetItemByInstanceId(item->obj_idx, item->sub_obj_idx));
+            }
         }
 
         modified_objects_ids.insert(static_cast<size_t>(item->obj_idx));

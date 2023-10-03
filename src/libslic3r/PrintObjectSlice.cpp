@@ -53,6 +53,7 @@ static std::vector<ExPolygons> slice_volume(
     if (! zs.empty()) {
         indexed_triangle_set its = volume.mesh().its;
         if (its.indices.size() > 0) {
+            BOOST_LOG_TRIVIAL(debug) << "-----------------> The aux slicer actually found something to slice in the mesh triangles";
             MeshSlicingParamsEx params2 { params };
             params2.trafo = params2.trafo * volume.get_matrix();
             if (params2.trafo.rotation().determinant() < 0.)
@@ -862,14 +863,18 @@ std::vector<Polygons> PrintObject::slice_model_volumes(const ModelVolumeType mod
         auto               throw_on_cancel_callback = std::function<void()>([print](){ print->throw_if_canceled(); });
         MeshSlicingParamsEx params;
         params.trafo = this->trafo_centered();
+        BOOST_LOG_TRIVIAL(debug) << "-------------> Slicing each volume...";
         for (; it_volume != it_volume_end; ++ it_volume)
             if ((*it_volume)->type() == model_volume_type) {
+                BOOST_LOG_TRIVIAL(debug) << "---------------> Found volume to slice.";
                 std::vector<ExPolygons> slices2 = slice_volume(*(*it_volume), zs, params, throw_on_cancel_callback);
                 if (slices.empty()) {
+                    BOOST_LOG_TRIVIAL(debug) << "---------------> After slicing volume, it was empty.";
                     slices.reserve(slices2.size());
                     for (ExPolygons &src : slices2)
                         slices.emplace_back(to_polygons(std::move(src)));
                 } else if (!slices2.empty()) {
+                    BOOST_LOG_TRIVIAL(debug) << "---------------> After slicing volume, it had " << slices2.size() << " slices.";
                     if (merge_layers.empty())
                         merge_layers.assign(zs.size(), false);
                     for (size_t i = 0; i < zs.size(); ++ i) {
@@ -884,6 +889,7 @@ std::vector<Polygons> PrintObject::slice_model_volumes(const ModelVolumeType mod
                 }
             }
         if (merge) {
+            BOOST_LOG_TRIVIAL(debug) << "-------------> Merging enabled, merging...";
             std::vector<Polygons*> to_merge;
             to_merge.reserve(zs.size());
             for (size_t i = 0; i < zs.size(); ++ i)

@@ -15,6 +15,7 @@
 #include <wx/bmpcbox.h>
 #include <wx/dc.h>
 
+#include <boost/log/trivial.hpp>
 
 namespace Slic3r {
 
@@ -694,8 +695,10 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
 	// NOTE: MyObjectTreeModelNodePtrArray is only an array of _pointers_
 	//       thus removing the node from it doesn't result in freeing it
 	if (node_parent) {
+        BOOST_LOG_TRIVIAL(debug) << "--------------------->o Deleted item has a parent";
         if (node->m_type & (itInstanceRoot|itLayerRoot))
         {
+            BOOST_LOG_TRIVIAL(debug) << "----------------------->o Deleted item is a root";
             // node can be deleted by the Delete, let's check its type while we safely can
             bool is_instance_root = (node->m_type & itInstanceRoot);
 
@@ -710,12 +713,14 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
 
 
         if (node->m_type & (itVolume|itLayer)) {
+            BOOST_LOG_TRIVIAL(debug) << "----------------------->o Deleted item is a volume or layer";
             node_parent->m_volumes_cnt--;
             DeleteSettings(item);
         }
 		node_parent->GetChildren().Remove(node);
 
 		if (id > 0) { 
+            BOOST_LOG_TRIVIAL(debug) << "----------------------->o Deleted item is not the first child";
             if (size_t(id) == node_parent->GetChildCount()) id--;
 			ret_item = wxDataViewItem(node_parent->GetChildren().Item(id));
 		}
@@ -732,6 +737,7 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
         // if there is last instance item, delete both of it and instance root item
         if (node_parent->GetChildCount() == 1 && node_parent->GetNthChild(0)->m_type == itInstance)
         {
+            BOOST_LOG_TRIVIAL(debug) << "----------------------->o Deleted item is the last instance, so delete instance root";
             delete node;
             ItemDeleted(parent, item);
 
@@ -753,11 +759,15 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
         }
 
         if (node->m_type & itInstance)
+        {
+            BOOST_LOG_TRIVIAL(debug) << "----------------------->o Deleted item is an instance";
             UpdateObjectPrintable(wxDataViewItem(node_parent->GetParent()));
+        }
 
         // if there was last layer item, delete this one and layers root item
         if (node_parent->GetChildCount() == 0 && node_parent->m_type == itLayerRoot)
         {
+            BOOST_LOG_TRIVIAL(debug) << "----------------------->o Last layer root shinanigans";
             ObjectDataViewModelNode *obj_node = node_parent->GetParent();
             obj_node->GetChildren().Remove(node_parent);
             delete node_parent;
@@ -771,6 +781,7 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
         // if there is last volume item after deleting, delete this last volume too
         if (node_parent->m_volumes_cnt == 1)
         {
+            BOOST_LOG_TRIVIAL(debug) << "----------------------->o Last volume shinanigans";
             // delete selected (penult) volume
             delete node;
             ItemDeleted(parent, item);
@@ -798,6 +809,7 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
 	}
 	else
 	{
+        BOOST_LOG_TRIVIAL(debug) << "----------------------->o Deleted item has no parent";
 		auto it = find(m_objects.begin(), m_objects.end(), node);
         size_t id = it - m_objects.begin();
 		if (it != m_objects.end())
@@ -820,6 +832,7 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
 
 	// set m_containet to FALSE if parent has no child
 	if (node_parent) {
+        BOOST_LOG_TRIVIAL(debug) << "------------------->o Post-deletion, we do stuff.";
         node_parent->invalidate_container();
 		ret_item = parent;
 	}

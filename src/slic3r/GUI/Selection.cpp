@@ -1448,12 +1448,17 @@ int Selection::bake_transform_if_needed() const
 
 void Selection::erase()
 {
+    BOOST_LOG_TRIVIAL(debug) << "----------->o Erasing selection...";
     if (!m_valid)
         return;
 
     if (is_single_full_object())
+    {
+        BOOST_LOG_TRIVIAL(debug) << "------------->o Is single full object.";
         wxGetApp().obj_list()->delete_from_model_and_list(ItemType::itObject, get_object_idx(), 0);
+    }
     else if (is_multiple_full_object()) {
+        BOOST_LOG_TRIVIAL(debug) << "------------->o Is multiple full object.";
         std::vector<ItemForDelete> items;
         items.reserve(m_cache.content.size());
         for (ObjectIdxsToInstanceIdxsMap::iterator it = m_cache.content.begin(); it != m_cache.content.end(); ++it) {
@@ -1462,6 +1467,7 @@ void Selection::erase()
         wxGetApp().obj_list()->delete_from_model_and_list(items);
     }
     else if (is_multiple_full_instance()) {
+        BOOST_LOG_TRIVIAL(debug) << "------------->o Is multiple full instance.";
         std::set<std::pair<int, int>> instances_idxs;
         for (ObjectIdxsToInstanceIdxsMap::iterator obj_it = m_cache.content.begin(); obj_it != m_cache.content.end(); ++obj_it) {
             for (InstanceIdxsList::reverse_iterator inst_it = obj_it->second.rbegin(); inst_it != obj_it->second.rend(); ++inst_it) {
@@ -1477,8 +1483,12 @@ void Selection::erase()
         wxGetApp().obj_list()->delete_from_model_and_list(items);
     }
     else if (is_single_full_instance())
+    {
+        BOOST_LOG_TRIVIAL(debug) << "------------->o Is single full instance.";
         wxGetApp().obj_list()->delete_from_model_and_list(ItemType::itInstance, get_object_idx(), get_instance_idx());
+    }
     else if (is_mixed()) {
+        BOOST_LOG_TRIVIAL(debug) << "------------->o Is mixed.";
         std::set<ItemForDelete> items_set;
         std::map<int, int> volumes_in_obj;
 
@@ -1531,6 +1541,7 @@ void Selection::erase()
         wxGetApp().obj_list()->delete_from_model_and_list(items);
     }
     else {
+        BOOST_LOG_TRIVIAL(debug) << "------------->o Is else.";
         std::set<std::pair<int, int>> volumes_idxs;
         for (unsigned int i : m_list) {
             const GLVolume* v = (*m_volumes)[i];
@@ -1543,6 +1554,7 @@ void Selection::erase()
         std::vector<ItemForDelete> items;
         items.reserve(volumes_idxs.size());
         for (const std::pair<int, int>& v : volumes_idxs) {
+            BOOST_LOG_TRIVIAL(debug) << "--------------->o items being deleted: " << v.first << ", " << v.second;
             items.emplace_back(ItemType::itVolume, v.first, v.second);
         }
 
